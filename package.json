@@ -1,0 +1,26 @@
+{
+  "name": "bugbounty-mcp",
+  "version": "1.0.0",
+  "description": "Bug bounty MCP server — recon wrappers, scope management, finding tracker, report drafter",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xx-r0ger-xx-security/bugbounty-mcp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xx-r0ger-xx-security/bugbounty-mcp/issues"
+  },
+  "homepage": "https://github.com/xx-r0ger-xx-security/bugbounty-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  }
+}
