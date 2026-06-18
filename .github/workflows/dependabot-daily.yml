@@ -1,0 +1,31 @@
+name: Daily Dependabot Check
+
+on:
+  schedule:
+    - cron: "0 7 * * *"  # Daily at 07:00 UTC, outside the Monday full scan
+
+permissions:
+  security-events: read
+
+jobs:
+  alert-check:
+    name: Check Dependabot Alerts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Count open alerts
+        id: deps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh api repos/${{ github.repository }}/dependabot/alerts \
+            --jq '[.[] | select(.state=="open")] | length' 2>/dev/null || echo 0)
+          echo "count=$count" >> $GITHUB_OUTPUT
+      - name: Notify Discord
+        if: steps.deps.outputs.count != '0'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          payload=$(jq -n \
+            --arg content "⚠️ **${{ steps.deps.outputs.count }} open Dependabot alert(s) in ${{ github.repository }}**\nhttps://github.com/${{ github.repository }}/security/dependabot" \
+            '{"content": $content}')
+          curl -X POST "$DISCORD_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

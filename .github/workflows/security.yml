@@ -38,7 +38,6 @@ jobs:
           python-version: "3.x"
       - run: pip install semgrep
       - run: semgrep scan --config=auto --sarif --output=semgrep.sarif
-        continue-on-error: true
       - uses: github/codeql-action/upload-sarif@v4
         if: always()
         continue-on-error: true
@@ -62,7 +61,41 @@ jobs:
     if: failure()
     steps:
       - name: Send Discord alert
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{\"content\": \"🚨 Security scan failed in **${{ github.repository }}**\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
+
+  summary:
+    name: Weekly Summary
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'schedule'
+    needs: [secrets, sast, dependencies]
+    steps:
+      - name: Get open Dependabot alert count
+        id: deps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh api repos/${{ github.repository }}/dependabot/alerts \
+            --jq '[.[] | select(.state=="open")] | length' 2>/dev/null || echo 0)
+          echo "count=$count" >> $GITHUB_OUTPUT
+      - name: Send Discord summary
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          secrets="${{ needs.secrets.result }}"
+          sast="${{ needs.sast.result }}"
+          deps="${{ needs.dependencies.result }}"
+          dep_count="${{ steps.deps.outputs.count }}"
+
+          [ "$secrets" = "success" ] && s_icon="✅" || s_icon="❌"
+          [ "$sast" = "success" ] && sast_icon="✅" || sast_icon="❌"
+          [ "$deps" = "success" ] && d_icon="✅" || d_icon="❌"
+          [ "$dep_count" = "0" ] && da_icon="✅" || da_icon="⚠️"
+
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"📋 **Weekly Security Report — ${{ github.repository }}**\n${s_icon} Secret scan: ${secrets}\n${sast_icon} SAST: ${sast}\n${d_icon} Dependencies: ${deps}\n${da_icon} Open Dependabot alerts: ${dep_count}\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"

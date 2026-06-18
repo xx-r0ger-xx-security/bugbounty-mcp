@@ -1,0 +1,23 @@
+name: Dependabot PR Alert
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  notify:
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Send Discord alert
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          payload=$(jq -n \
+            --arg content "🔔 **Dependabot PR opened — ${{ github.repository }}**\n${{ github.event.pull_request.title }}\n${{ github.event.pull_request.html_url }}" \
+            '{"content": $content}')
+          curl -X POST "$DISCORD_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
