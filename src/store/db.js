@@ -10,15 +10,19 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '../../data');
 
+const VALID_STORE_NAME = /^[a-z0-9_-]+$/i;
+
 function loadStore(name) {
-  const path = join(DATA_DIR, `${name}.json`);
-  if (!existsSync(path)) return [];
-  return JSON.parse(readFileSync(path, 'utf8'));
+  if (!VALID_STORE_NAME.test(name)) throw new Error(`Invalid store name: ${name}`);
+  const filePath = join(DATA_DIR, `${name}.json`);
+  if (!existsSync(filePath)) return [];
+  return JSON.parse(readFileSync(filePath, 'utf8'));
 }
 
 function saveStore(name, data) {
-  const path = join(DATA_DIR, `${name}.json`);
-  writeFileSync(path, JSON.stringify(data, null, 2), 'utf8');
+  if (!VALID_STORE_NAME.test(name)) throw new Error(`Invalid store name: ${name}`);
+  const filePath = join(DATA_DIR, `${name}.json`);
+  writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
 
 // --- Scopes ---
