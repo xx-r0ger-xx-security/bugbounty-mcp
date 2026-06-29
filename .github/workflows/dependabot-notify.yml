@@ -16,8 +16,11 @@ jobs:
       - name: Send Discord alert
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REPO: ${{ github.repository }}
         run: |
           payload=$(jq -n \
-            --arg content "🔔 **Dependabot PR opened — ${{ github.repository }}**\n${{ github.event.pull_request.title }}\n${{ github.event.pull_request.html_url }}" \
+            --arg content "🔔 **Dependabot PR opened — $REPO**\n$PR_TITLE\n$PR_URL" \
             '{"content": $content}')
           curl -X POST "$DISCORD_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
